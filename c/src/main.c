@@ -3,6 +3,21 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+static int close_fd(int fd, const char *label)
+{
+    if (fd < 0) {
+	// 획득 못한 자원임
+	return 0;
+    }
+
+    if (close(fd) == -1) {
+	perror(label);
+	return -1;
+    }
+
+    return 0;
+}
+
 int main(void)
 {
     /**
@@ -82,21 +97,14 @@ int main(void)
 	return 1;
     }
 
-    int exit_status_check = 0;
+    int status = 0;
 
-    if (close(client_fd) == -1) {
-	perror("close client");
-	exit_status_check += 1;
+    if (close_fd(client_fd, "client") == -1) {
+	status += 1;
+    }
+    if (close_fd(server_fd, "server") == -1) {
+	status += 1;
     }
 
-    if (close(server_fd == -1)) {
-	perror("close server");
-	exit_status_check += 1;
-    }
-
-    if (exit_status_check == 2) {
-	return 0;
-    }
-
-    return 1;
+    return status;
 }
