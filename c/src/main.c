@@ -49,12 +49,49 @@ int main(void)
 	return 1;
     }
 
-    printf("Socket bounded");
+    printf("Socket bound to 127.0.0.1:8080\n");
 
-    if (close(server_fd) == -1) {
-	perror("close");
+    // @reference:
+    // https://beej.us/guide/bgnet/html/split/system-calls-or-bust.html#listen
+    // The number of connections allowed on the incoming queue라는데 몇이 적절한
+    // 수치인지 모르겠음. 성능 따라 가변적으로 조절해야하나?
+    const int backlog = 16;
+
+    if (listen(server_fd, backlog) == -1) {
+	perror("listen");
+
+	// 아 이거 이제 좀 쓰기 귀찮음
+	if (close(server_fd) == -1) {
+	    perror("close after listen failure");
+	}
+
 	return 1;
     }
 
-    return 0;
+    printf("Waiting for a client...\n");
+
+    int client_fd = accept(server_fd, NULL, NULL);
+
+    if (client_fd == -1) {
+	perror("accept");
+
+	if (close(server_fd) == -1) {
+	    perror("close after accept failure");
+	}
+
+	return 1;
+    }
+
+    int exit_status = 0;
+    if (close(client_fd) == -1) {
+	perror("close client");
+	exit_status = 1;
+    }
+
+    if (close(server_fd == -1)) {
+	perror("close server");
+	exit_status = 1;
+    }
+
+    return exit_status;
 }
