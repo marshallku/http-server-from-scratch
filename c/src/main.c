@@ -82,16 +82,21 @@ int main(void)
 	return 1;
     }
 
-    int exit_status = 0;
+    int exit_status_check = 0;
+
     if (close(client_fd) == -1) {
 	perror("close client");
-	exit_status = 1;
+	exit_status_check += 1;
     }
 
     if (close(server_fd == -1)) {
 	perror("close server");
-	exit_status = 1;
+	exit_status_check += 1;
     }
 
-    return exit_status;
+    if (exit_status_check == 2) {
+	return 0;
+    }
+
+    return 1;
 }
