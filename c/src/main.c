@@ -99,11 +99,32 @@ int main(void)
 
     int status = 0;
 
+    // 클라가 보낸 데이터 그대로 반환 예정. 일단 1024
+    char buffer[1024];
+
+    // 데이터 도착할 때까지 기다린 다음 받은 바이트 수 반환하기
+    ssize_t received = recv(client_fd, buffer, sizeof(buffer), 0);
+
+    if (received == -1) {
+	perror("recv");
+	status = 30;
+    } else if (received == 0) {
+	printf("Client finished sending. \n");
+    } else {
+	printf("Received %zd bytes:\n", received);
+
+	// 클라가 보낸 그대로 다시 쓰기
+	if (fwrite(buffer, 1, (size_t)received, stdout) != (size_t)received) {
+	    perror("fwrite");
+	    status = 31;
+	}
+    }
+
     if (close_fd(client_fd, "client") == -1) {
-	status += 1;
+	status = 10;
     }
     if (close_fd(server_fd, "server") == -1) {
-	status += 1;
+	status = 11;
     }
 
     return status;
