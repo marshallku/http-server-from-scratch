@@ -1,3 +1,4 @@
+#include <errno.h>
 #include <netinet/in.h>
 #include <stdio.h>
 #include <sys/socket.h>
@@ -101,22 +102,36 @@ int main(void)
 
     // 클라가 보낸 데이터 그대로 반환 예정. 일단 1024
     char buffer[1024];
+    size_t total_received = 0;
 
-    // 데이터 도착할 때까지 기다린 다음 받은 바이트 수 반환하기
-    ssize_t received = recv(client_fd, buffer, sizeof(buffer), 0);
+    while (1) {
+	// 데이터 도착할 때까지 기다린 다음 받은 바이트 수 반환하기
+	ssize_t received = recv(client_fd, buffer, sizeof(buffer), 0);
+	if (received == -1) {
+	    // 신호 때문에 대기 중단되면 다시 시도해야 함
+	    if (errno == EINTR) {
+		continue;
+	    }
 
-    if (received == -1) {
-	perror("recv");
-	status = 30;
-    } else if (received == 0) {
-	printf("Client finished sending. \n");
-    } else {
-	printf("Received %zd bytes:\n", received);
+	    perror("recv");
+	    status = 30;
+	    break;
+	}
+	if (received == 0) {
+	    printf("Client finished sending. Total: %zu bytes \n",
+		   total_received);
+	    break;
+	}
 
-	// 클라가 보낸 그대로 다시 쓰기
-	if (fwrite(buffer, 1, (size_t)received, stdout) != (size_t)received) {
+	size_t length = (size_t)received;
+	total_received += length;
+
+	printf("Received %zu bytes:\n", length);
+
+	if (fwrite(buffer, 1, length, stdout) != length) {
 	    perror("fwrite");
 	    status = 31;
+	    break;
 	}
     }
 
